@@ -1,0 +1,1142 @@
+PROJECT CODE SNAPSHOT
+Total files: 26
+======================================================================
+
+FILE: README.md
+======================================================================
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+FILE: collect_code.py
+======================================================================
+"""
+collect_code.py
+Run this from the root of your ToneCheck project:
+    python collect_code.py
+It writes all source code into  project_code.txt  in the same folder.
+"""
+
+import os
+
+# ── Configuration ────────────────────────────────────────────────────────────
+
+# Extensions to include
+INCLUDE_EXTENSIONS = {
+    ".js", ".jsx", ".ts", ".tsx",
+    ".css", ".html",
+    ".json", ".yaml", ".yml", ".env",
+    ".md", ".txt",
+    ".py",
+}
+
+# Files to always skip (by exact filename)
+SKIP_FILES = {
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    ".env.local",
+}
+
+# Folders to skip entirely
+SKIP_DIRS = {
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".next",
+    "__pycache__",
+    ".vite",
+    "coverage",
+}
+
+OUTPUT_FILE = "project_code.txt"
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def should_include(path: str) -> bool:
+    filename = os.path.basename(path)
+    if filename in SKIP_FILES:
+        return False
+    _, ext = os.path.splitext(filename)
+    return ext.lower() in INCLUDE_EXTENSIONS
+
+
+def collect(root: str) -> list[tuple[str, str]]:
+    """Walk the project and return [(relative_path, content), ...]."""
+    files = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        # Prune skipped directories in-place so os.walk won't descend
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+
+        for name in sorted(filenames):
+            full_path = os.path.join(dirpath, name)
+            rel_path  = os.path.relpath(full_path, root)
+
+            if not should_include(full_path):
+                continue
+
+            try:
+                with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+                    content = f.read()
+                files.append((rel_path, content))
+            except Exception as e:
+                files.append((rel_path, f"[Could not read file: {e}]"))
+
+    return files
+
+
+def write_output(files: list[tuple[str, str]], output_path: str) -> None:
+    separator = "=" * 70
+
+    with open(output_path, "w", encoding="utf-8") as out:
+        out.write("PROJECT CODE SNAPSHOT\n")
+        out.write(f"Total files: {len(files)}\n")
+        out.write(separator + "\n\n")
+
+        for rel_path, content in files:
+            out.write(f"FILE: {rel_path}\n")
+            out.write(separator + "\n")
+            out.write(content)
+            if not content.endswith("\n"):
+                out.write("\n")
+            out.write("\n\n")
+
+    print(f"✅  Wrote {len(files)} files → {output_path}")
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    print(f"📁  Scanning: {project_root}")
+
+    files = collect(project_root)
+    write_output(files, os.path.join(project_root, OUTPUT_FILE))
+
+
+FILE: components.json
+======================================================================
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": false,
+  "tsx": false,
+  "tailwind": {
+    "config": "",
+    "css": "src/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "rtl": false,
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
+}
+
+
+FILE: eslint.config.js
+======================================================================
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+  },
+])
+
+
+FILE: index.html
+======================================================================
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToneCheck — Say what you actually mean</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+
+FILE: jsconfig.json
+======================================================================
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+
+
+FILE: package.json
+======================================================================
+{
+  "name": "tonecheck",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
+    "@base-ui/react": "^1.6.0",
+    "@fontsource-variable/geist": "^5.2.9",
+    "@tailwindcss/vite": "^4.3.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "shadcn": "^4.11.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.1",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "vite": "^8.0.12"
+  }
+}
+
+
+FILE: vite.config.js
+======================================================================
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+})
+
+
+FILE: src\App.css
+======================================================================
+
+
+
+FILE: src\App.jsx
+======================================================================
+import { useState } from 'react'
+import Navbar from './components/Navbar'
+import Hero from './components/Hero'
+import HowItWorks from './components/HowItWorks'
+import ToolSection from './components/ToolSection'
+import MessageInput from './components/MessageInput'
+import VibeResults from './components/VibeResults'
+import MetricCards from './components/MetricCards'
+import FeelingCard from './components/FeelingCard'
+import RewriteCard from './components/RewriteCard'
+import Footer from './components/Footer'
+import { useToneCheck } from './hooks/useToneCheck'
+
+function App() {
+  const [message, setMessage] = useState('')
+  const [selectedTone, setSelectedTone] = useState('Friendly')
+  const { analyze, result, loading, error } = useToneCheck()
+
+  return (
+    <div className="min-h-screen bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <Navbar />
+      <Hero />
+      <HowItWorks />
+      <ToolSection>
+        <MessageInput
+          message={message}
+          setMessage={setMessage}
+          selectedTone={selectedTone}
+          setSelectedTone={setSelectedTone}
+          onAnalyze={() => analyze(message, selectedTone)}
+          loading={loading}
+        />
+        {error && (
+          <p className="mx-7 text-sm text-red-400 font-medium">{error}</p>
+        )}
+        {result && (
+          <div className="mt-2">
+            <VibeResults vibesDetected={result.vibes} />
+            <MetricCards
+              warmth={result.warmth}
+              clarity={result.clarity}
+              conflictRisk={result.conflictRisk}
+            />
+            <FeelingCard feeling={result.feeling} />
+            <RewriteCard rewrites={result.rewrites} selectedTone={selectedTone} />
+          </div>
+        )}
+      </ToolSection>
+      <Footer />
+    </div>
+  )
+}
+
+export default App
+
+
+FILE: src\index.css
+======================================================================
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+
+FILE: src\main.jsx
+======================================================================
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+FILE: src\components\Bot.jsx
+======================================================================
+import { useEffect, useState } from 'react'
+
+const messages = [
+  "Hmm, this sounds tense...",
+  "I sense some frustration!",
+  "Let me fix this for you!",
+  "Analyzing the vibe...",
+  "Here's a kinder version!"
+]
+
+function Bot() {
+  const [msgIndex, setMsgIndex] = useState(0)
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false)
+      setTimeout(() => {
+        setMsgIndex(i => (i + 1) % messages.length)
+        setVisible(true)
+      }, 300)
+    }, 2800)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="flex flex-col items-center w-44">
+
+      {/* Speech bubble */}
+      <div className={`relative bg-white border border-gray-100 shadow-lg rounded-2xl px-4 py-2 text-xs font-semibold text-gray-800 whitespace-nowrap mb-3 transition-all duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+        {messages[msgIndex]}
+        {/* Tail */}
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white" />
+      </div>
+
+      {/* Bot SVG */}
+      <div className="animate-bounce" style={{ animationDuration: '3s' }}>
+        <svg width="120" height="145" viewBox="0 0 130 155" fill="none">
+          <defs>
+            <radialGradient id="bodyG" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#c4b5fd"/>
+              <stop offset="100%" stopColor="#7c3aed"/>
+            </radialGradient>
+            <radialGradient id="headG" cx="40%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#ddd6fe"/>
+              <stop offset="100%" stopColor="#8b5cf6"/>
+            </radialGradient>
+          </defs>
+          <rect x="22" y="68" width="86" height="72" rx="22" fill="url(#bodyG)"/>
+          <rect x="30" y="76" width="70" height="56" rx="16" fill="rgba(255,255,255,0.15)"/>
+          <rect x="38" y="88" width="54" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+          <rect x="38" y="100" width="38" height="6" rx="3" fill="rgba(255,255,255,0.35)"/>
+          <rect x="38" y="112" width="46" height="6" rx="3" fill="rgba(255,255,255,0.25)"/>
+          <rect x="4" y="80" width="16" height="34" rx="8" fill="url(#bodyG)"/>
+          <rect x="110" y="80" width="16" height="34" rx="8" fill="url(#bodyG)"/>
+          <rect x="38" y="140" width="16" height="15" rx="7" fill="url(#bodyG)"/>
+          <rect x="76" y="140" width="16" height="15" rx="7" fill="url(#bodyG)"/>
+          <ellipse cx="65" cy="46" rx="38" ry="40" fill="url(#headG)"/>
+          <ellipse cx="52" cy="42" rx="10" ry="11" fill="white"/>
+          <ellipse cx="78" cy="42" rx="10" ry="11" fill="white"/>
+          <ellipse cx="52" cy="43" rx="5.5" ry="6" fill="#4c1d95"/>
+          <ellipse cx="78" cy="43" rx="5.5" ry="6" fill="#4c1d95"/>
+          <ellipse cx="53.5" cy="41.5" rx="2" ry="2" fill="white"/>
+          <ellipse cx="79.5" cy="41.5" rx="2" ry="2" fill="white"/>
+          <rect x="50" y="57" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.7)"/>
+          <ellipse cx="38" cy="42" rx="5" ry="5" fill="#f9a8d4" opacity="0.7"/>
+          <ellipse cx="92" cy="42" rx="5" ry="5" fill="#f9a8d4" opacity="0.7"/>
+          <ellipse cx="65" cy="10" rx="4" ry="4" fill="#a78bfa"/>
+          <rect x="63.5" y="14" width="3" height="10" rx="1.5" fill="#a78bfa"/>
+        </svg>
+      </div>
+
+      {/* Shadow under bot */}
+      <div className="w-20 h-3 bg-violet-300/30 rounded-full blur-sm mt-1 animate-pulse" />
+
+    </div>
+  )
+}
+
+export default Bot
+
+
+FILE: src\components\FeelingCard.jsx
+======================================================================
+function FeelingCard({ feeling }) {
+  return (
+    <div className="mx-7 mb-4 bg-gradient-to-br from-violet-50 to-pink-50 border border-violet-100 rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-pink-400 flex items-center justify-center text-sm shadow-md shadow-violet-200">
+          👁️
+        </div>
+        <span className="text-xs font-bold text-violet-600 uppercase tracking-wider">
+          How they might feel
+        </span>
+      </div>
+      <p className="text-sm text-violet-700 leading-relaxed">{feeling}</p>
+    </div>
+  )
+}
+
+export default FeelingCard
+
+
+FILE: src\components\Footer.jsx
+======================================================================
+function Footer() {
+  return (
+    <footer className="border-t border-gray-100 py-10 px-8 lg:px-16 bg-white">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
+            <span className="text-white text-xs">✦</span>
+          </div>
+          <span style={{ fontFamily: 'Sora, sans-serif' }} className="text-sm font-bold text-gray-900">ToneCheck</span>
+        </div>
+        <p className="text-xs text-gray-400 text-center">
+          Say what you mean. Every time. — Built with care for better human communication.
+        </p>
+        <p className="text-xs text-gray-300">© 2025 ToneCheck</p>
+      </div>
+    </footer>
+  )
+}
+
+export default Footer
+
+
+FILE: src\components\Hero.jsx
+======================================================================
+import Bot from './Bot'
+
+function Hero() {
+  function scrollTo(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  return (
+    <section id="hero" className="relative overflow-hidden bg-white min-h-[88vh] flex items-center">
+
+      {/* Background lights — full width */}
+      <div className="absolute w-[600px] h-[600px] rounded-full bg-violet-100/70 blur-3xl -top-40 -left-32 pointer-events-none" />
+      <div className="absolute w-[500px] h-[500px] rounded-full bg-pink-100/60 blur-3xl -top-20 -right-32 pointer-events-none" />
+      <div className="absolute w-[400px] h-[400px] rounded-full bg-violet-50 blur-3xl bottom-0 right-1/4 pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-8 lg:px-16 py-20">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
+
+          {/* Left — text */}
+          <div className="flex-1 max-w-2xl">
+
+            <div className="inline-flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-full px-4 py-1.5 mb-8">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+              <span className="text-xs font-semibold text-violet-600 tracking-widest uppercase">
+                AI-powered tone analysis
+              </span>
+            </div>
+
+            <h1 style={{ fontFamily: 'Sora, sans-serif' }} className="text-6xl lg:text-7xl font-extrabold text-gray-950 leading-[1.05] tracking-tight mb-6">
+              Your words<br />matter. <br />
+              <span className="bg-gradient-to-r from-violet-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Make them land.
+              </span>
+            </h1>
+
+            <p className="text-lg text-gray-500 leading-relaxed max-w-lg mb-10">
+              Paste any message before you hit send. ToneCheck reads the emotion behind your words, warns you of risks, and rewrites it so it lands exactly the way you intended.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-12">
+              <button
+                onClick={() => scrollTo('tool')}
+                className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-violet-200 hover:shadow-violet-300 hover:scale-105 transition-all cursor-pointer text-base"
+              >
+                ✨ Analyze my message — free
+              </button>
+              <button
+                onClick={() => scrollTo('how-it-works')}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer font-medium flex items-center gap-2"
+              >
+                See how it works →
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex -space-x-2">
+                {['🧑‍💻','👩‍💼','🧑‍🎨','👨‍🏫','👩‍🔬'].map((e, i) => (
+                  <div key={i} className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-100 to-pink-100 border-2 border-white flex items-center justify-center text-base shadow-sm">
+                    {e}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-gray-400">
+                Trusted by <span className="text-gray-800 font-bold">2,400+</span> people who care how they communicate
+              </p>
+            </div>
+          </div>
+
+          {/* Right — Bot + floating cards */}
+          <div className="flex-shrink-0 relative flex items-center justify-center w-full lg:w-auto">
+
+            {/* Floating card — top left */}
+            <div className="absolute -top-6 -left-8 bg-white rounded-2xl shadow-xl border border-gray-100 px-4 py-3 z-20 hidden lg:block">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🔥</span>
+                <div>
+                  <p className="text-xs font-bold text-gray-800">Aggressive tone</p>
+                  <p className="text-xs text-gray-400">detected in your message</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating card — bottom right */}
+            <div className="absolute -bottom-4 -right-6 bg-white rounded-2xl shadow-xl border border-gray-100 px-4 py-3 z-20 hidden lg:block">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">✨</span>
+                <div>
+                  <p className="text-xs font-bold text-gray-800">Rewritten kindly</p>
+                  <p className="text-xs text-gray-400">conflict risk dropped 68%</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bot */}
+            <div className="relative bg-gradient-to-br from-violet-50 to-pink-50 rounded-3xl p-10 border border-violet-100 shadow-2xl shadow-violet-100">
+              <Bot />
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default Hero
+
+
+FILE: src\components\HowItWorks.jsx
+======================================================================
+const steps = [
+  {
+    icon: '📝',
+    title: 'Paste your message',
+    desc: 'Copy any message you\'re about to send — a text, email, Slack message, anything.',
+    color: 'bg-violet-50 border-violet-100',
+    iconBg: 'bg-violet-100',
+  },
+  {
+    icon: '🧠',
+    title: 'AI reads the tone',
+    desc: 'Our AI detects the emotional tone, conflict risk, warmth level, and how the reader will likely feel.',
+    color: 'bg-pink-50 border-pink-100',
+    iconBg: 'bg-pink-100',
+  },
+  {
+    icon: '✨',
+    title: 'Get a better version',
+    desc: 'Receive a rewritten version in your chosen tone — kinder, more confident, or more professional.',
+    color: 'bg-emerald-50 border-emerald-100',
+    iconBg: 'bg-emerald-100',
+  },
+]
+
+function HowItWorks() {
+  return (
+    <section id="how-it-works" className="bg-gray-50/80 border-y border-gray-100 py-24 px-8 lg:px-16">
+      <div className="max-w-7xl mx-auto">
+
+        <div className="text-center mb-16">
+          <p className="text-xs font-bold text-violet-500 uppercase tracking-widest mb-3">How it works</p>
+          <h2 style={{ fontFamily: 'Sora, sans-serif' }} className="text-4xl lg:text-5xl font-extrabold text-gray-950 tracking-tight">
+            Three steps to a better message
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {steps.map((step, i) => (
+            <div key={i} className={`flex flex-col gap-5 p-8 rounded-3xl border ${step.color} hover:scale-105 transition-transform`}>
+              <div className={`w-14 h-14 rounded-2xl ${step.iconBg} flex items-center justify-center text-3xl`}>
+                {step.icon}
+              </div>
+              <div>
+                <h3 style={{ fontFamily: 'Sora, sans-serif' }} className="text-xl font-bold text-gray-900 mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  )
+}
+
+export default HowItWorks
+
+
+FILE: src\components\MessageInput.jsx
+======================================================================
+const toneChips = [
+  { label: 'Kinder', style: 'bg-pink-50 text-pink-700 border-pink-200' },
+  { label: 'Friendly', style: 'bg-violet-50 text-violet-700 border-violet-200' },
+  { label: 'Professional', style: 'bg-teal-50 text-teal-700 border-teal-200' },
+  { label: 'Confident', style: 'bg-amber-50 text-amber-700 border-amber-200' },
+]
+
+function MessageInput({ message, setMessage, selectedTone, setSelectedTone, onAnalyze, loading }) {
+  return (
+    <div className="mx-7 mb-4 bg-white/80 backdrop-blur border border-gray-100 rounded-2xl p-5 shadow-sm">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400">
+          <span>💬</span> Your message
+        </div>
+        <span className="text-xs text-gray-300 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-lg">
+          {message.length} chars
+        </span>
+      </div>
+
+      {/* Textarea */}
+      <textarea
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+        placeholder="Paste the message you're about to send..."
+        rows={4}
+        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-300 resize-none outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 transition-all"
+      />
+
+      {/* Tone chips */}
+      <div className="mt-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+          Rewrite it as...
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          {toneChips.map(chip => (
+            <button
+              key={chip.label}
+              onClick={() => setSelectedTone(chip.label)}
+              className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all cursor-pointer ${chip.style} ${
+                selectedTone === chip.label
+                  ? 'ring-2 ring-violet-300 ring-offset-1'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Analyze button */}
+      <button
+        onClick={onAnalyze}
+        disabled={!message || loading}
+        className="w-full mt-4 py-3 bg-gradient-to-r from-violet-600 to-pink-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+      >
+        {loading ? '✨ Analyzing...' : '✨ Analyze my message'}
+      </button>
+
+    </div>
+  )
+}
+
+export default MessageInput
+
+
+FILE: src\components\MetricCards.jsx
+======================================================================
+function MetricCards({ warmth, clarity, conflictRisk }) {
+  return (
+    <div className="mx-7 mb-4 grid grid-cols-3 gap-3">
+
+      <div className="bg-pink-50 border border-pink-100 rounded-2xl p-4 text-center">
+        <div className="text-2xl mb-2">❤️</div>
+        <div className="text-xs text-pink-400 uppercase tracking-wider font-semibold mb-1">Warmth</div>
+        <div className="text-sm font-bold text-pink-700">{warmth}</div>
+      </div>
+
+      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
+        <div className="text-2xl mb-2">💡</div>
+        <div className="text-xs text-emerald-400 uppercase tracking-wider font-semibold mb-1">Clarity</div>
+        <div className="text-sm font-bold text-emerald-700">{clarity}</div>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
+        <div className="text-2xl mb-2">💣</div>
+        <div className="text-xs text-amber-400 uppercase tracking-wider font-semibold mb-1">Conflict risk</div>
+        <div className="text-sm font-bold text-amber-700">{conflictRisk}%</div>
+        <div className="mt-2 h-1.5 bg-amber-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full transition-all duration-1000"
+            style={{ width: `${conflictRisk}%` }}
+          />
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
+export default MetricCards
+
+
+FILE: src\components\NavBar.jsx
+======================================================================
+function Navbar() {
+  function scrollTo(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  return (
+    <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur z-50">
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-200">
+          <span className="text-white text-sm">✦</span>
+        </div>
+        <span style={{ fontFamily: 'Sora, sans-serif' }} className="text-[15px] font-bold text-gray-950 tracking-tight">
+          ToneCheck
+        </span>
+      </div>
+
+      <div className="hidden sm:flex items-center gap-1 bg-gray-100 rounded-full p-1">
+        {[
+          { label: 'Home', id: 'hero' },
+          { label: 'How it works', id: 'how-it-works' },
+          { label: 'Try it', id: 'tool' },
+        ].map((item, i) => (
+          <button
+            key={item.label}
+            onClick={() => scrollTo(item.id)}
+            className={`text-xs font-medium px-4 py-1.5 rounded-full cursor-pointer transition-all border-none ${
+              i === 0 ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600 bg-transparent'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={() => scrollTo('tool')}
+        className="bg-gradient-to-r from-violet-600 to-pink-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-violet-200 hover:shadow-violet-300 hover:scale-105 transition-all cursor-pointer whitespace-nowrap"
+      >
+        Try for free
+      </button>
+    </nav>
+  )
+}
+
+export default Navbar
+
+
+FILE: src\components\RewriteCard.jsx
+======================================================================
+import { useState } from 'react'
+
+function RewriteCard({ rewrites, selectedTone }) {
+  const [copied, setCopied] = useState(false)
+  const text = rewrites[selectedTone] || ''
+
+  function handleCopy() {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1800)
+  }
+
+  return (
+    <div className="mx-7 mb-8 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center text-sm">
+          🪄
+        </div>
+        <span className="text-sm font-bold text-gray-800">
+          Rewritten — {selectedTone} version
+        </span>
+      </div>
+
+      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-sm text-emerald-800 leading-relaxed">
+        {text}
+      </div>
+
+      <div className="flex justify-end mt-3">
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-2 text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-2 rounded-xl shadow-md shadow-violet-200 hover:opacity-90 transition-opacity cursor-pointer"
+        >
+          {copied ? '✅ Copied!' : '📋 Copy rewrite'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default RewriteCard
+
+
+FILE: src\components\ToolSection.jsx
+======================================================================
+function ToolSection({ children }) {
+  return (
+    <section id="tool" className="py-20 bg-white px-8 lg:px-16">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <p className="text-xs font-bold text-violet-500 uppercase tracking-widest mb-3">Try it now — it's free</p>
+          <h2 style={{ fontFamily: 'Sora, sans-serif' }} className="text-4xl lg:text-5xl font-extrabold text-gray-950 tracking-tight mb-4">
+            Paste your message below
+          </h2>
+          <p className="text-base text-gray-400 max-w-md mx-auto leading-relaxed">
+            No sign up needed. Just paste, analyze, and send with confidence.
+          </p>
+        </div>
+        <div className="max-w-2xl mx-auto">
+          {children}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default ToolSection
+
+
+FILE: src\components\VibeResults.jsx
+======================================================================
+const vibes = [
+  { label: 'Aggressive', emoji: '🔥', style: 'bg-red-50 text-red-600 border-red-200' },
+  { label: 'Cold', emoji: '❄️', style: 'bg-blue-50 text-blue-600 border-blue-200' },
+  { label: 'Passive-aggressive', emoji: '⚠️', style: 'bg-amber-50 text-amber-600 border-amber-200' },
+  { label: 'Warm', emoji: '☀️', style: 'bg-yellow-50 text-yellow-600 border-yellow-200' },
+  { label: 'Friendly', emoji: '😊', style: 'bg-green-50 text-green-600 border-green-200' },
+  { label: 'Professional', emoji: '💼', style: 'bg-teal-50 text-teal-600 border-teal-200' },
+]
+
+function VibeResults({ vibesDetected }) {
+  return (
+    <div className="mx-7 mb-4">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+        Vibe detected
+      </p>
+      <div className="flex gap-2 flex-wrap">
+        {vibesDetected.map(vibe => {
+          const match = vibes.find(v => v.label === vibe)
+          if (!match) return null
+          return (
+            <div key={vibe} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold border ${match.style}`}>
+              <span>{match.emoji}</span> {match.label}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default VibeResults
+
+
+FILE: src\hooks\useToneCheck.js
+======================================================================
+import { useState } from 'react'
+import { buildPrompt } from '../utils/prompt'
+
+export function useToneCheck() {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  async function analyze(message, tone) {
+    if (!message) return
+    setLoading(true)
+    setResult(null)
+    setError(null)
+    console.log('Key:', import.meta.env.VITE_OPENROUTER_KEY)
+    let data
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'openrouter/auto',
+          messages: [{ role: 'user', content: buildPrompt(message, tone) }],
+        }),
+      })
+
+      data = await response.json()
+      console.log('API response:', data)
+
+      if (!response.ok) {
+        setError('Something went wrong. Please try again.')
+        return
+      }
+
+      const text = data.choices[0].message.content
+      const clean = text.replace(/```json|```/g, '').trim()
+      const parsed = JSON.parse(clean)
+
+      setResult({
+        vibes: parsed.vibes,
+        warmth: parsed.warmth,
+        clarity: parsed.clarity,
+        conflictRisk: parsed.conflictRisk,
+        feeling: parsed.feeling,
+        rewrites: { [tone]: parsed.rewrite }
+      })
+
+    } catch (err) {
+      console.error('Error:', err)
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { analyze, result, loading, error }
+}
+
+
+FILE: src\lib\utils.js
+======================================================================
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
+
+
+FILE: src\utils\prompt.js
+======================================================================
+export function buildPrompt(message, tone) {
+  return `You are a tone analysis expert. Analyze this message and respond ONLY with a JSON object, no extra text, no markdown:
+
+Message: "${message}"
+
+Respond with exactly this JSON structure:
+{
+  "vibes": ["one or two of: Aggressive, Cold, Passive-aggressive, Warm, Friendly, Professional"],
+  "warmth": "one of: Very low, Low, Medium, High, Very high",
+  "clarity": "one of: Low, Medium, High",
+  "conflictRisk": 45,
+  "feeling": "2 sentences about how the reader might feel",
+  "rewrite": "rewrite the message in a ${tone} tone"
+}`
+}
+
+
